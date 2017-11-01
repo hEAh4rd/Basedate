@@ -2,7 +2,7 @@ Easy queries:
 SELECT *FROM team WHERE founded < '2010-01-01';
 SELECT *FROM championship WHERE prize_fund >= 250000;
 SELECT *FROM player WHERE team_id = 4;
-SELECT *FROM player WHERE homeland = 1;
+SELECT *FROM mediaprovider where id < 4;
 Medium queries: 
 SELECT *FROM team t JOIN team_mediaprovider tm ON tm.tid =t.id JOIN mediaprovider m ON tm.mpid = m.id WHERE t.founded <=m.date_of_create;
 SELECT *FROM team t JOIN teamchampionship tc ON t.id = tc.tid JOIN championship c ON t.country = c.host_country AND tc.cid = c.id;
