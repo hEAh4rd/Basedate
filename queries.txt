@@ -1,0 +1,7 @@
+Eazy queries:
+select *from team where founded < '2010-01-01';
+select *from championship where prize_fund >= 250000;
+select *from player where team_id = 4;
+select *from player where homeland = 1;
+Medium queries: 
+select *from team t join team_mediaprovider tm on tm.tid =t.id join mediaprovider m on tm.mpid = m.id where t.founded <=m.date_of_create;
