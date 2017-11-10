@@ -22,3 +22,5 @@ SELECT t.name, t.country, tc.place_of_team, tc.kush_of_team, c.name, c.end_date,
 Если место создания команды не совподает с местом рождения игрока, то поля surname и alias будут пусты, и просто выведена строна и соответвующая команда и дата её создания. 
 SELECT co.name, p.surname, p.alias, t.name, t.founded FROM country co LEFT JOIN player p ON co.id = p.homeland JOIN team t ON t.country = co.id where t.founded > '1990-01-01' ORDER BY country, t.founded ASC limit 25;
 
+Данная выборка демонстрирует процесс вывода на экран СМИ и соответствующие ссылки от данной команды, а также видно откуда данная команда выкладывает свои новости: ролики, фотографии, презентации и прочее. Данное сми должно было создано до 2005-05-05, сортировка идёт по имени СМИ (m.name), выводятся первые 15 строк. 
+SELECT m.name, m.date_of_create, tm.link, t.name, t.founded, co.name FROM mediaprovider m JOIN team_mediaprovider tm ON m.id = tm.mpid JOIN team t ON tm.tid=t.id JOIN country co ON t.country = co.id WHERE m.date_of_create > '2005-05-05' ORDER BY tm.name ASC limit 15;
