@@ -1,9 +1,24 @@
-Easy queries:
-SELECT *FROM team WHERE founded < '2010-01-01';
-SELECT *FROM championship WHERE prize_fund >= 250000;
-SELECT *FROM player WHERE team_id = 4;
-SELECT *FROM mediaprovider where id < 4;
-Medium queries: 
-SELECT *FROM team t JOIN team_mediaprovider tm ON tm.tid =t.id JOIN mediaprovider m ON tm.mpid = m.id WHERE t.founded <=m.date_of_create;
-SELECT *FROM team t JOIN teamchampionship tc ON t.id = tc.tid JOIN championship c ON t.country = c.host_country AND tc.cid = c.id;
-SELECT *FROM team t JOIN country co ON t.country = co.id JOIN player p ON p.homeland = co.id AND p.team_id = t.id;
+Постая выборка: 
+
+Данная выборка демонстрирует команды, которые были созданы до 2010-01-01 в порядке возрастания года создания:
+SELECT *FROM team WHERE founded < '2010-01-01' order by founded ASC;
+
+Данная выборка демонстрирует чемпионаты, даты завершения чемпионата до 2016-05-14, где призовой фонд выбирается в порядке убывания. 
+SELECT id AS "Number", name, prize_fund  FROM championship where end_date < '2016-05-14' order by prize_fund DESC;
+
+Данная выборка демонстрирует игроков, дата рождения которых < 1995-01-01, сортируется в порядке убывания, выводятся первые 10 игроков.
+SELECT *FROM player WHERE date_of_birth < '1995-01-01' ORDER BY career_start DESC limit 10;
+
+Данная выборка демонстрирует чемпионаты, призовые фонды не повторяются, а сортируются относительно даты, если есть два похожих призовых фонда по количеству денег, то они сравниваются: выбирается тот, который закончился позже, призовой фонд не может быть меньше 100000.
+SELECT DISTINCT ON (prize_fund) name, end_date FROM championship where prize_fund > 100000 ORDER BY prize_fund,end_date ASC;
+
+
+Средняя выборка: 
+
+Данная выборка демонстрирует процесс вывода тех команд, которые играли в родных странах на различных чемпионатах, которые закончились позже 2016-01-01, сортируется по занятому месту на чемпионате в порядке возрастания (начиная с первого).
+SELECT t.name, t.country, tc.place_of_team, tc.kush_of_team, c.name, c.end_date, c.host_country, c.prize_fund FROM team t JOIN teamchampionship tc ON t.id = tc.tid JOIN championship c ON t.country = c.host_country AND tc.cid = c.id WHERE c.end_date > '2016-01-01' ORDER BY tc.place_of_team ASC;
+
+Данная выборка демонстрирует процесс вывода стран и сопоставления ей игроков из команды, которая была создана там, где родился игрок (то есть необязательно, что он состоит в этой команде: одна команда представляет одну страну), команды, которые участвуют в выбоке должны быть созданны после 1990-01-01, формирование происходит в порядке возрастания id страны, выводятся первые 25 команд.
+Если место создания команды не совподает с местом рождения игрока, то поля surname и alias будут пусты, и просто выведена строна и соответвующая команда и дата её создания. 
+SELECT co.name, p.surname, p.alias, t.name, t.founded FROM country co LEFT JOIN player p ON co.id = p.homeland JOIN team t ON t.country = co.id where t.founded > '1990-01-01' ORDER BY country, t.founded ASC limit 25;
+
