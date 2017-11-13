@@ -44,10 +44,10 @@ COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
 SET search_path = public, pg_catalog;
 
 --
--- Name: cid; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: championship_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE cid
+CREATE SEQUENCE championship_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -55,7 +55,7 @@ CREATE SEQUENCE cid
     CACHE 1;
 
 
-ALTER TABLE cid OWNER TO postgres;
+ALTER TABLE championship_id_seq OWNER TO postgres;
 
 SET default_tablespace = '';
 
@@ -66,25 +66,27 @@ SET default_with_oids = false;
 --
 
 CREATE TABLE championship (
-    id integer DEFAULT nextval('cid'::regclass) NOT NULL,
+    id integer DEFAULT nextval('championship_id_seq'::regclass) NOT NULL,
     name character varying(50) NOT NULL,
     start_date date NOT NULL,
     end_date date NOT NULL,
     host_country integer NOT NULL,
     prize_fund integer,
     CONSTRAINT championship_more CHECK ((id > 0)),
+    CONSTRAINT end_date CHECK (((end_date > start_date) AND (end_date > '2012-01-02'::date))),
     CONSTRAINT host_country_check CHECK ((host_country > 0)),
-    CONSTRAINT prize_fund_check CHECK ((prize_fund > 0))
+    CONSTRAINT prize_fund_check CHECK ((prize_fund > 0)),
+    CONSTRAINT start_date CHECK (((start_date < end_date) AND (start_date > '2012-01-01'::date)))
 );
 
 
 ALTER TABLE championship OWNER TO postgres;
 
 --
--- Name: coid; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: country_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE coid
+CREATE SEQUENCE country_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -92,14 +94,14 @@ CREATE SEQUENCE coid
     CACHE 1;
 
 
-ALTER TABLE coid OWNER TO postgres;
+ALTER TABLE country_id_seq OWNER TO postgres;
 
 --
 -- Name: country; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE country (
-    id integer DEFAULT nextval('coid'::regclass) NOT NULL,
+    id integer DEFAULT nextval('country_id_seq'::regclass) NOT NULL,
     name character varying(30) NOT NULL,
     CONSTRAINT country_more CHECK ((id > 0))
 );
@@ -108,10 +110,10 @@ CREATE TABLE country (
 ALTER TABLE country OWNER TO postgres;
 
 --
--- Name: id; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: mediaprovider_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE id
+CREATE SEQUENCE mediaprovider_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -119,30 +121,17 @@ CREATE SEQUENCE id
     CACHE 1;
 
 
-ALTER TABLE id OWNER TO postgres;
-
---
--- Name: mpid; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE mpid
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE mpid OWNER TO postgres;
+ALTER TABLE mediaprovider_id_seq OWNER TO postgres;
 
 --
 -- Name: mediaprovider; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE mediaprovider (
-    id integer DEFAULT nextval('mpid'::regclass) NOT NULL,
+    id integer DEFAULT nextval('mediaprovider_id_seq'::regclass) NOT NULL,
     name character varying(30) NOT NULL,
     date_of_create date NOT NULL,
+    CONSTRAINT date_of_create CHECK ((date_of_create > '1960-01-01'::date)),
     CONSTRAINT mediaprovider_more CHECK ((id > 0))
 );
 
@@ -150,17 +139,34 @@ CREATE TABLE mediaprovider (
 ALTER TABLE mediaprovider OWNER TO postgres;
 
 --
+-- Name: player_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE player_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE player_id_seq OWNER TO postgres;
+
+--
 -- Name: player; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE player (
-    id integer DEFAULT nextval('id'::regclass) NOT NULL,
+    id integer DEFAULT nextval('player_id_seq'::regclass) NOT NULL,
     surname character varying(50) NOT NULL,
     alias character varying(30) NOT NULL,
     date_of_birth date NOT NULL,
     homeland integer NOT NULL,
     career_start date NOT NULL,
     team_id integer NOT NULL,
+    CONSTRAINT career_start CHECK ((career_start > '2000-01-01'::date)),
+    CONSTRAINT date_of_birth CHECK ((date_of_birth > '1920-01-01'::date)),
+    CONSTRAINT date_of_birth_more CHECK ((date_of_birth > '1920-01-01'::date)),
     CONSTRAINT homeland_check CHECK ((homeland > 0)),
     CONSTRAINT player_more CHECK ((id > 0)),
     CONSTRAINT team_id_check CHECK ((team_id > 0))
@@ -170,10 +176,10 @@ CREATE TABLE player (
 ALTER TABLE player OWNER TO postgres;
 
 --
--- Name: tcid; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: team_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE tcid
+CREATE SEQUENCE team_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -181,32 +187,19 @@ CREATE SEQUENCE tcid
     CACHE 1;
 
 
-ALTER TABLE tcid OWNER TO postgres;
-
---
--- Name: tid; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE tid
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE tid OWNER TO postgres;
+ALTER TABLE team_id_seq OWNER TO postgres;
 
 --
 -- Name: team; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE team (
-    id integer DEFAULT nextval('tid'::regclass) NOT NULL,
+    id integer DEFAULT nextval('team_id_seq'::regclass) NOT NULL,
     name character varying(30) NOT NULL,
     founded date NOT NULL,
     country integer,
     CONSTRAINT country_check CHECK ((country > 0)),
+    CONSTRAINT founded_more CHECK ((founded > '1980-01-01'::date)),
     CONSTRAINT team_more CHECK ((id > 0))
 );
 
@@ -233,33 +226,17 @@ ALTER TABLE team_mediaprovider OWNER TO postgres;
 --
 
 CREATE TABLE teamchampionship (
-    id integer DEFAULT nextval('tcid'::regclass) NOT NULL,
     tid integer NOT NULL,
     cid integer NOT NULL,
     place_of_team integer NOT NULL,
     kush_of_team integer NOT NULL,
     CONSTRAINT champion_tid_check CHECK ((tid > 0)),
     CONSTRAINT cid_check CHECK ((cid > 0)),
-    CONSTRAINT kush_of_team_check CHECK ((kush_of_team > '-1'::integer)),
-    CONSTRAINT teamchampionship_more CHECK ((id > 0))
+    CONSTRAINT kush_of_team_check CHECK ((kush_of_team > '-1'::integer))
 );
 
 
 ALTER TABLE teamchampionship OWNER TO postgres;
-
---
--- Name: tmpid; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE tmpid
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE tmpid OWNER TO postgres;
 
 --
 -- Data for Name: championship; Type: TABLE DATA; Schema: public; Owner: postgres
@@ -278,17 +255,10 @@ INSERT INTO championship VALUES (10, 'DreamHack_Leipzig', '2016-01-22', '2016-01
 
 
 --
--- Name: cid; Type: SEQUENCE SET; Schema: public; Owner: postgres
+-- Name: championship_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('cid', 10, true);
-
-
---
--- Name: coid; Type: SEQUENCE SET; Schema: public; Owner: postgres
---
-
-SELECT pg_catalog.setval('coid', 11, true);
+SELECT pg_catalog.setval('championship_id_seq', 10, true);
 
 
 --
@@ -309,10 +279,10 @@ INSERT INTO country VALUES (11, 'France');
 
 
 --
--- Name: id; Type: SEQUENCE SET; Schema: public; Owner: postgres
+-- Name: country_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('id', 40, true);
+SELECT pg_catalog.setval('country_id_seq', 11, true);
 
 
 --
@@ -327,10 +297,10 @@ INSERT INTO mediaprovider VALUES (5, 'Twitter', '2006-03-21');
 
 
 --
--- Name: mpid; Type: SEQUENCE SET; Schema: public; Owner: postgres
+-- Name: mediaprovider_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('mpid', 5, true);
+SELECT pg_catalog.setval('mediaprovider_id_seq', 5, true);
 
 
 --
@@ -380,10 +350,10 @@ INSERT INTO player VALUES (40, 'Schrub', 'kennyS', '1995-05-19', 11, '2017-02-03
 
 
 --
--- Name: tcid; Type: SEQUENCE SET; Schema: public; Owner: postgres
+-- Name: player_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('tcid', 55, true);
+SELECT pg_catalog.setval('player_id_seq', 40, true);
 
 
 --
@@ -398,6 +368,13 @@ INSERT INTO team VALUES (5, 'Team_Liquid', '2000-05-14', 8);
 INSERT INTO team VALUES (6, 'Team_Kinguin', '2015-05-05', 3);
 INSERT INTO team VALUES (7, 'Astralis', '2016-01-19', 10);
 INSERT INTO team VALUES (8, 'G2', '2015-02-11', 11);
+
+
+--
+-- Name: team_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('team_id_seq', 8, true);
 
 
 --
@@ -440,75 +417,58 @@ INSERT INTO team_mediaprovider VALUES (8, 5, 'twitter.com/g2esports');
 -- Data for Name: teamchampionship; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO teamchampionship VALUES (1, 1, 1, 4, 70000);
-INSERT INTO teamchampionship VALUES (2, 2, 1, 1, 400000);
-INSERT INTO teamchampionship VALUES (3, 3, 1, 2, 140000);
-INSERT INTO teamchampionship VALUES (4, 4, 1, 21, 30000);
-INSERT INTO teamchampionship VALUES (5, 5, 1, 23, 30000);
-INSERT INTO teamchampionship VALUES (6, 1, 2, 13, 0);
-INSERT INTO teamchampionship VALUES (7, 2, 2, 14, 0);
-INSERT INTO teamchampionship VALUES (8, 1, 3, 2, 50000);
-INSERT INTO teamchampionship VALUES (9, 2, 3, 8, 10000);
-INSERT INTO teamchampionship VALUES (10, 5, 3, 13, 2000);
-INSERT INTO teamchampionship VALUES (11, 5, 1, 23, 30000);
-INSERT INTO teamchampionship VALUES (12, 7, 1, 5, 50000);
-INSERT INTO teamchampionship VALUES (13, 8, 1, 13, 40000);
-INSERT INTO teamchampionship VALUES (14, 8, 2, 2, 100000);
-INSERT INTO teamchampionship VALUES (15, 7, 2, 5, 20000);
-INSERT INTO teamchampionship VALUES (16, 5, 3, 13, 2000);
-INSERT INTO teamchampionship VALUES (17, 7, 3, 11, 2000);
-INSERT INTO teamchampionship VALUES (18, 8, 3, 14, 2000);
-INSERT INTO teamchampionship VALUES (19, 7, 4, 1, 500000);
-INSERT INTO teamchampionship VALUES (20, 2, 4, 2, 150000);
-INSERT INTO teamchampionship VALUES (21, 3, 4, 3, 70000);
-INSERT INTO teamchampionship VALUES (22, 4, 4, 4, 70000);
-INSERT INTO teamchampionship VALUES (23, 1, 4, 5, 35000);
-INSERT INTO teamchampionship VALUES (24, 5, 4, 9, 8750);
-INSERT INTO teamchampionship VALUES (25, 8, 4, 12, 8750);
-INSERT INTO teamchampionship VALUES (26, 6, 4, 13, 8750);
-INSERT INTO teamchampionship VALUES (27, 7, 5, 2, 140000);
-INSERT INTO teamchampionship VALUES (28, 4, 5, 3, 60000);
-INSERT INTO teamchampionship VALUES (29, 2, 5, 5, 50000);
-INSERT INTO teamchampionship VALUES (30, 1, 5, 9, 30000);
-INSERT INTO teamchampionship VALUES (31, 1, 5, 9, 30000);
-INSERT INTO teamchampionship VALUES (32, 8, 5, 10, 30000);
-INSERT INTO teamchampionship VALUES (33, 3, 5, 11, 30000);
-INSERT INTO teamchampionship VALUES (34, 5, 6, 3, 10000);
-INSERT INTO teamchampionship VALUES (35, 4, 7, 1, 500000);
-INSERT INTO teamchampionship VALUES (36, 5, 7, 2, 150000);
-INSERT INTO teamchampionship VALUES (37, 3, 7, 3, 70000);
-INSERT INTO teamchampionship VALUES (38, 2, 7, 4, 70000);
-INSERT INTO teamchampionship VALUES (39, 7, 7, 5, 35000);
-INSERT INTO teamchampionship VALUES (40, 1, 7, 8, 35000);
-INSERT INTO teamchampionship VALUES (41, 6, 7, 12, 8750);
-INSERT INTO teamchampionship VALUES (42, 8, 7, 15, 8750);
-INSERT INTO teamchampionship VALUES (43, 1, 8, 1, 125000);
-INSERT INTO teamchampionship VALUES (44, 2, 8, 2, 50000);
-INSERT INTO teamchampionship VALUES (45, 5, 8, 3, 25000);
-INSERT INTO teamchampionship VALUES (46, 4, 8, 4, 25000);
-INSERT INTO teamchampionship VALUES (47, 3, 8, 5, 8500);
-INSERT INTO teamchampionship VALUES (48, 7, 8, 7, 5000);
-INSERT INTO teamchampionship VALUES (49, 8, 8, 8, 3000);
-INSERT INTO teamchampionship VALUES (50, 7, 9, 3, 10000);
-INSERT INTO teamchampionship VALUES (51, 4, 8, 5, 3000);
-INSERT INTO teamchampionship VALUES (52, 1, 10, 1, 50000);
-INSERT INTO teamchampionship VALUES (53, 7, 10, 4, 10000);
-INSERT INTO teamchampionship VALUES (54, 4, 10, 7, 2000);
-INSERT INTO teamchampionship VALUES (55, 2, 10, 8, 2000);
-
-
---
--- Name: tid; Type: SEQUENCE SET; Schema: public; Owner: postgres
---
-
-SELECT pg_catalog.setval('tid', 8, true);
-
-
---
--- Name: tmpid; Type: SEQUENCE SET; Schema: public; Owner: postgres
---
-
-SELECT pg_catalog.setval('tmpid', 34, true);
+INSERT INTO teamchampionship VALUES (1, 1, 4, 70000);
+INSERT INTO teamchampionship VALUES (2, 1, 1, 400000);
+INSERT INTO teamchampionship VALUES (3, 1, 2, 140000);
+INSERT INTO teamchampionship VALUES (4, 1, 21, 30000);
+INSERT INTO teamchampionship VALUES (1, 2, 13, 0);
+INSERT INTO teamchampionship VALUES (2, 2, 14, 0);
+INSERT INTO teamchampionship VALUES (1, 3, 2, 50000);
+INSERT INTO teamchampionship VALUES (2, 3, 8, 10000);
+INSERT INTO teamchampionship VALUES (7, 1, 5, 50000);
+INSERT INTO teamchampionship VALUES (8, 1, 13, 40000);
+INSERT INTO teamchampionship VALUES (8, 2, 2, 100000);
+INSERT INTO teamchampionship VALUES (7, 2, 5, 20000);
+INSERT INTO teamchampionship VALUES (7, 3, 11, 2000);
+INSERT INTO teamchampionship VALUES (8, 3, 14, 2000);
+INSERT INTO teamchampionship VALUES (7, 4, 1, 500000);
+INSERT INTO teamchampionship VALUES (2, 4, 2, 150000);
+INSERT INTO teamchampionship VALUES (3, 4, 3, 70000);
+INSERT INTO teamchampionship VALUES (4, 4, 4, 70000);
+INSERT INTO teamchampionship VALUES (1, 4, 5, 35000);
+INSERT INTO teamchampionship VALUES (5, 4, 9, 8750);
+INSERT INTO teamchampionship VALUES (8, 4, 12, 8750);
+INSERT INTO teamchampionship VALUES (6, 4, 13, 8750);
+INSERT INTO teamchampionship VALUES (7, 5, 2, 140000);
+INSERT INTO teamchampionship VALUES (4, 5, 3, 60000);
+INSERT INTO teamchampionship VALUES (2, 5, 5, 50000);
+INSERT INTO teamchampionship VALUES (8, 5, 10, 30000);
+INSERT INTO teamchampionship VALUES (3, 5, 11, 30000);
+INSERT INTO teamchampionship VALUES (5, 6, 3, 10000);
+INSERT INTO teamchampionship VALUES (4, 7, 1, 500000);
+INSERT INTO teamchampionship VALUES (5, 7, 2, 150000);
+INSERT INTO teamchampionship VALUES (3, 7, 3, 70000);
+INSERT INTO teamchampionship VALUES (2, 7, 4, 70000);
+INSERT INTO teamchampionship VALUES (7, 7, 5, 35000);
+INSERT INTO teamchampionship VALUES (1, 7, 8, 35000);
+INSERT INTO teamchampionship VALUES (6, 7, 12, 8750);
+INSERT INTO teamchampionship VALUES (8, 7, 15, 8750);
+INSERT INTO teamchampionship VALUES (1, 8, 1, 125000);
+INSERT INTO teamchampionship VALUES (2, 8, 2, 50000);
+INSERT INTO teamchampionship VALUES (5, 8, 3, 25000);
+INSERT INTO teamchampionship VALUES (4, 8, 4, 25000);
+INSERT INTO teamchampionship VALUES (3, 8, 5, 8500);
+INSERT INTO teamchampionship VALUES (7, 8, 7, 5000);
+INSERT INTO teamchampionship VALUES (8, 8, 8, 3000);
+INSERT INTO teamchampionship VALUES (7, 9, 3, 10000);
+INSERT INTO teamchampionship VALUES (1, 10, 1, 50000);
+INSERT INTO teamchampionship VALUES (7, 10, 4, 10000);
+INSERT INTO teamchampionship VALUES (4, 10, 7, 2000);
+INSERT INTO teamchampionship VALUES (2, 10, 8, 2000);
+INSERT INTO teamchampionship VALUES (1, 5, 9, 30000);
+INSERT INTO teamchampionship VALUES (5, 3, 13, 2000);
+INSERT INTO teamchampionship VALUES (4, 9, 5, 3000);
+INSERT INTO teamchampionship VALUES (5, 1, 23, 30000);
 
 
 --
@@ -636,7 +596,7 @@ ALTER TABLE ONLY team
 --
 
 ALTER TABLE ONLY teamchampionship
-    ADD CONSTRAINT teamchampionship_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT teamchampionship_pkey PRIMARY KEY (tid, cid);
 
 
 --
