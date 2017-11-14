@@ -5,7 +5,6 @@
 -- Dumped from database version 9.6.5
 -- Dumped by pg_dump version 9.6.5
 
-
 DROP DATABASE last;
 --
 -- Name: last; Type: DATABASE; Schema: -; Owner: postgres
@@ -72,9 +71,7 @@ CREATE TABLE championship (
     end_date date NOT NULL,
     host_country integer NOT NULL,
     prize_fund integer,
-    CONSTRAINT championship_more CHECK ((id > 0)),
     CONSTRAINT end_date CHECK (((end_date > start_date) AND (end_date > '2012-01-02'::date))),
-    CONSTRAINT host_country_check CHECK ((host_country > 0)),
     CONSTRAINT prize_fund_check CHECK ((prize_fund > 0)),
     CONSTRAINT start_date CHECK (((start_date < end_date) AND (start_date > '2012-01-01'::date)))
 );
@@ -102,8 +99,7 @@ ALTER TABLE country_id_seq OWNER TO postgres;
 
 CREATE TABLE country (
     id integer DEFAULT nextval('country_id_seq'::regclass) NOT NULL,
-    name character varying(30) NOT NULL,
-    CONSTRAINT country_more CHECK ((id > 0))
+    name character varying(30) NOT NULL
 );
 
 
@@ -131,8 +127,7 @@ CREATE TABLE mediaprovider (
     id integer DEFAULT nextval('mediaprovider_id_seq'::regclass) NOT NULL,
     name character varying(30) NOT NULL,
     date_of_create date NOT NULL,
-    CONSTRAINT date_of_create CHECK ((date_of_create > '1960-01-01'::date)),
-    CONSTRAINT mediaprovider_more CHECK ((id > 0))
+    CONSTRAINT date_of_create CHECK ((date_of_create > '1960-01-01'::date))
 );
 
 
@@ -166,10 +161,7 @@ CREATE TABLE player (
     team_id integer NOT NULL,
     CONSTRAINT career_start CHECK ((career_start > '2000-01-01'::date)),
     CONSTRAINT date_of_birth CHECK ((date_of_birth > '1920-01-01'::date)),
-    CONSTRAINT date_of_birth_more CHECK ((date_of_birth > '1920-01-01'::date)),
-    CONSTRAINT homeland_check CHECK ((homeland > 0)),
-    CONSTRAINT player_more CHECK ((id > 0)),
-    CONSTRAINT team_id_check CHECK ((team_id > 0))
+    CONSTRAINT date_of_birth_more CHECK ((date_of_birth > '1920-01-01'::date))
 );
 
 
@@ -198,9 +190,7 @@ CREATE TABLE team (
     name character varying(30) NOT NULL,
     founded date NOT NULL,
     country integer,
-    CONSTRAINT country_check CHECK ((country > 0)),
-    CONSTRAINT founded_more CHECK ((founded > '1980-01-01'::date)),
-    CONSTRAINT team_more CHECK ((id > 0))
+    CONSTRAINT founded_more CHECK ((founded > '1980-01-01'::date))
 );
 
 
