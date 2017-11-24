@@ -24,3 +24,22 @@ SELECT co.name, p.surname, p.alias, t.name, t.founded FROM country co LEFT JOIN 
 
 Данная выборка демонстрирует процесс вывода на экран СМИ и соответствующие ссылки от данной команды, а также видно откуда данная команда выкладывает свои новости: ролики, фотографии, презентации и прочее. Данное сми должно было создано до 2005-05-05, сортировка идёт по имени СМИ (m.name), выводятся первые 15 строк. 
 SELECT m.name, m.date_of_create, tm.link, t.name, t.founded, co.name FROM mediaprovider m JOIN team_mediaprovider tm ON m.id = tm.mpid JOIN team t ON tm.tid=t.id JOIN country co ON t.country = co.id WHERE m.date_of_create > '2005-05-05' ORDER BY tm.name ASC limit 15;
+
+Сложная выборка: 
+
+Найти разницу между максимальным выигрышем команды (по всем) и средней суммой среди всех выиграшей команд, т.е насколько максимальный выигрышь превышает средний выигрышь.
+SELECT (SELECT MAX(t.kush_of_team) FROM teamchampionship t) - (SELECT FLOOR(AVG(t.kush_of_team)) FROM teamchampionship t) AS dif_kush_max_and_avg;
+
+Выброра демонстрирует уникальные имена команд, которые выиграли за один чемпионат большую сумму, нежели минимальный призовой фон среди всех чемпионтов был разыгран на данное время, выводит имена команд, выигранную сумму, имена чемпионтов, на которых был получен куш и место на чемпионате. 
+SELECT DISTINCT ON (t.name) t.name, tc.kush_of_team, c.name, tc.place_of_team from team t
+JOIN teamchampionship tc ON t.id = tc.tid
+JOIN championship c ON tc.cid = c.id
+WHERE tc.kush_of_team > (SELECT MIN(prize_fund) FROM championship
+ORDER BY t.name, tc.kush_of_team DESC);
+
+Выборка демонстрирует средний возраст игроков и максимальную игровую карьеру среди всех.
+SELECT (SELECT FLOOR(AVG(date_part('year',localtimestamp) - date_part('year',player.date_of_birth)))
+AS AVG_age from player) WHERE	, 
+FLOOR(MAX(date_part('year',localtimestamp) - date_part('year', player.career_start)))
+AS MAX_career from player
+WHERE	;
