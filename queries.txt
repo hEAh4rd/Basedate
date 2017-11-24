@@ -2,16 +2,19 @@
 
 Данная выборка демонстрирует команды, которые были созданы до 2010-01-01 в порядке возрастания года создания:
 SELECT *FROM team WHERE founded < '2010-01-01' order by founded ASC;
+CREATE INDEX team_founded_index ON team USING HASH (founded);
 
 Данная выборка демонстрирует чемпионаты, даты завершения чемпионата до 2016-05-14, где призовой фонд выбирается в порядке убывания. 
 SELECT id AS "Number", name, prize_fund  FROM championship where end_date < '2016-05-14' order by prize_fund DESC;
+CREATE INDEX championship_end_date_index ON championship USING HASH (end_date);
 
 Данная выборка демонстрирует игроков, дата рождения которых < 1995-01-01, сортируется в порядке убывания, выводятся первые 10 игроков.
 SELECT *FROM player WHERE date_of_birth < '1995-01-01' ORDER BY career_start DESC limit 10;
+CREATE INDEX player_date_of_birth_index ON player USING HASH (date_of_birth);
 
 Данная выборка демонстрирует чемпионаты, призовые фонды не повторяются, а сортируются относительно даты, если есть два похожих призовых фонда по количеству денег, то они сравниваются: выбирается тот, который закончился позже, призовой фонд не может быть меньше 100000.
 SELECT DISTINCT ON (prize_fund) name, end_date FROM championship where prize_fund > 100000 ORDER BY prize_fund,end_date ASC;
-
+CREATE INDEX Championship_prize_fund_index ON championship (prize_fund);
 
 Средняя выборка: 
 
