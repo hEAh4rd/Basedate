@@ -182,22 +182,56 @@ Limit  (cost=5.32..5.35 rows=12 width=400) (actual time=0.353..0.357 rows=15 loo
 
 Сложная выборка: 
 
-Найти разницу между максимальным выигрышем команды (по всем) и средней суммой среди всех выигрышей команд, т.е насколько максимальный превышает средний выигрышь.
-SELECT
-(SELECT MAX(t.kush_of_team) FROM teamchampionship t)
+Выводит название команды и количество чемпионатов, на которых эта команда принимала участие.
+select distinct(t.name) AS name_of_team, 
+count_of_championships  
+FROM 
+(select 
+t.id, 
+t.name, 
+count(t.id) AS count_of_championships 
+from team t 
+JOIN 
+teamchampionship tc 
+ON t.id = tc.tid 
+JOIN championship c 
+ON tc.cid = c.id 
+GROUP BY t.id) 
+AS t 
+JOIN teamchampionship tc 
+ON t.id=tc.tid 
+JOIN championship c 
+ON c.id=tc.cid 
+order by count_of_championships DESC; 
+
+Данная выборка демонстрирует команды, которые за один чемпионат выиграли больше денег, чем минимальный призовой фонд среди всех чемпионатов. 
+SELECT DISTINCT ON (t.name) t.name, tc.kush_of_team from team t 
+JOIN teamchampionship tc ON t.id = tc.tid 
+JOIN championship c ON tc.cid = c.id 
+WHERE tc.kush_of_team > (SELECT MIN(prize_fund) FROM championship 
+ORDER BY t.name, tc.kush_of_team DESC); 
+
+Найти разницу между между максимальным суммарным выиграшем команды и минимальным суммарным выиграшем команды. 
+select 
+(select 
+max(sum) 
+from 
+(select 
+t.name, sum(tc.kush_of_team) 
+from team t 
+JOIN teamchampionship tc 
+ON t.id = tc.tid 
+GROUP BY t.id) 
+AS MAX)
 - 
-(SELECT FLOOR(AVG(t.kush_of_team)) FROM teamchampionship t) 
-AS dif_kush_max_and_avg;
-
-Выборка демонстрирует уникальные имена команд, которые выиграли за один чемпионат большую сумму, нежели минимальный призовой фонд среди всех чемпионатов был разыгран на данное время, выводит имена команд, выигранную сумму, имена чемпионата, на котором был получен куш и место на чемпионате. 
-SELECT DISTINCT ON (t.name) t.name, tc.kush_of_team, c.name, tc.place_of_team from team t
-JOIN teamchampionship tc ON t.id = tc.tid
-JOIN championship c ON tc.cid = c.id
-WHERE tc.kush_of_team > (SELECT MIN(prize_fund) FROM championship
-ORDER BY t.name, tc.kush_of_team DESC);
-
-Выборка демонстрирует средний возраст игроков и максимальную игровую карьеру среди всех.
-SELECT (SELECT FLOOR(AVG(date_part('year',localtimestamp) - date_part('year',player.date_of_birth)))
-AS AVG_age from player), 
-FLOOR(MAX(date_part('year',localtimestamp) - date_part('year', player.career_start)))
-AS MAX_career from player;
+(select 
+min(sum) 
+from 
+(select 
+t.name, sum(tc.kush_of_team) 
+from team t 
+JOIN teamchampionship tc 
+ON t.id = tc.tid 
+GROUP BY t.id) 
+AS MIN) 
+AS dif_between_max_kush_of_team_and_min_kush_of_team;
