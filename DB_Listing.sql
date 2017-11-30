@@ -1,7 +1,7 @@
-﻿DROP DATABASE IF EXISTS last;
-CREATE DATABASE last;
-GRANT ALL PRIVILEGES ON DATABASE last TO postgres;
-\connect last
+﻿DROP DATABASE IF EXISTS csgo;
+CREATE DATABASE csgo;
+GRANT ALL PRIVILEGES ON DATABASE csgo TO postgres;
+\connect csgo
 
 CREATE TABLE championship (
     id serial primary key,
