@@ -1,0 +1,122 @@
+Постая выборка: 
+
+1)Данная выборка демонстрирует команды, которые были созданы до 2010-01-01 в порядке возрастания года создания:
+SELECT *FROM team WHERE founded < '2010-01-01' order by founded ASC;
+
+Оптимизация:  CREATE INDEX team_founded_index ON team USING HASH (founded);
+
+2)Данная выборка вывод количество игроков для каждой команды, которые роделись до 1995-1-1, сортировка по id в порядке возрастания. 
+SELECT team_id, count(id) AS Number_of_players_from_the_team FROM player WHERE date_of_birth<'1995-1-1' GROUP BY team_id ORDER BY team_id ASC;
+
+Оптимизация:
+
+3)Данная выборка демонстрирует количество чемпионатов, где призовой фонд был более 100000.
+SELECT COUNT(id) AS Number_of_championships FROM championship WHERE prize_fund > 100000;
+
+Оптимизация: 
+
+4)Данная выборка демонстрирует чемпионаты, призовые фонды не повторяются, а сортируются относительно даты, если есть два похожих призовых фонда по количеству денег, то они сравниваются: выбирается тот, который закончился позже, призовой фонд не может быть меньше 100000.
+SELECT DISTINCT ON (prize_fund) name, end_date FROM championship where prize_fund > 100000 ORDER BY prize_fund,end_date ASC;
+
+Оптимизация: CREATE INDEX Championship_prize_fund_index ON championship (prize_fund);
+
+ 
+Средняя выборка: 
+
+1)Данная выборка демонстрирует процесс вывода тех команд, которые играли в родных странах на различных чемпионатах, которые закончились позже 2016-01-01, сортируется по занятому месту на чемпионате в порядке возрастания (начиная с первого).
+
+SELECT t.name, t.country, tc.place_of_team, tc.kush_of_team, c.name, c.end_date, c.host_country, c.prize_fund FROM team t 
+JOIN teamchampionship 
+tc ON t.id = tc.tid 
+JOIN championship c 
+ON t.country = c.host_country 
+AND tc.cid = c.id 
+WHERE c.end_date > '2016-01-01'  
+ORDER BY tc.place_of_team ASC; 
+
+Оптимизация:  CREATE INDEX team_sireal_id_index ON team (id);
+              CREATE INDEX teamchampionship_tid_index ON teamchampionship (tid);
+              CREATE INDEX team_country_index ON team (country);
+              CREATE INDEX championship_host_country_index ON championship (host_country);
+              CREATE INDEX teamchampionship_cid_index ON teamchampionship (cid);
+              CREATE INDEX championship_sireal_id_index ON championship (id);
+              CREATE INDEX championship_end_date_index ON championship USING HASH (end_date);
+              
+2)Данная выборка подсчитывает количество СМИ, которые есть у команды (т.е для каждой команды своё количество СМИ), причём СМИ должны быть созданы позднее 2000-1-1.
+
+SELECT t.name, count(tm.tid) AS Number_of_media 
+FROM mediaprovider m 
+JOIN team_mediaprovider tm 
+ON m.id=tm.mpid 
+JOIN team t 
+ON tm.tid = t.id 
+WHERE m.date_of_create>'2000-1-1'
+GROUP BY t.id 
+ORDER BY count(tm.tid) DESC;
+
+
+3)Данная выборка подсчитывает сколько заработала каждая команда, заняв при этом от первого до третьего места.
+
+SELECT t.name, SUM(tm.kush_of_team) 
+FROM team t 
+JOIN teamchampionship tm 
+ON t.id=tm.tid 
+WHERE tm.place_of_team<4  
+GROUP BY t.id 
+ORDER BY sum(tm.kush_of_team) ASC;
+
+Сложная выборка: 
+
+Выводит название команды и количество чемпионатов, на которых эта команда принимала участие.
+select distinct(t.name) AS name_of_team, 
+count_of_championships  
+FROM 
+(select 
+t.id, 
+t.name, 
+count(t.id) AS count_of_championships 
+from team t 
+JOIN 
+teamchampionship tc 
+ON t.id = tc.tid 
+JOIN championship c 
+ON tc.cid = c.id 
+GROUP BY t.id) 
+AS t 
+JOIN teamchampionship tc 
+ON t.id=tc.tid 
+JOIN championship c 
+ON c.id=tc.cid 
+order by count_of_championships DESC; 
+
+Данная выборка демонстрирует команды, которые за один чемпионат выиграли больше денег, чем минимальный призовой фонд среди всех чемпионатов. 
+SELECT DISTINCT ON (t.name) t.name, tc.kush_of_team from team t 
+JOIN teamchampionship tc ON t.id = tc.tid 
+JOIN championship c ON tc.cid = c.id 
+WHERE tc.kush_of_team > (SELECT MIN(prize_fund) FROM championship 
+ORDER BY t.name, tc.kush_of_team DESC); 
+
+Найти разницу между максимальным суммарным количеством денег, которая команда "А" выиграла, и минимальным суммарным количеством денег, которая выиграла команда "Б", где А и Б две разных команды. 
+select 
+(select 
+max(sum) 
+from 
+(select 
+t.name, sum(tc.kush_of_team) 
+from team t 
+JOIN teamchampionship tc 
+ON t.id = tc.tid 
+GROUP BY t.id) 
+AS MAX)
+- 
+(select 
+min(sum) 
+from 
+(select 
+t.name, sum(tc.kush_of_team) 
+from team t 
+JOIN teamchampionship tc 
+ON t.id = tc.tid 
+GROUP BY t.id) 
+AS MIN) 
+AS dif_between_max_kush_of_team_and_min_kush_of_team;
