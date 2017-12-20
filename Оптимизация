@@ -228,7 +228,7 @@ SET enable_seqscan to off;
    Sort Key: (count(tm.tid)) DESC
    Sort Method: quicksort  Memory: 25kB
    ->  GroupAggregate  (cost=27.87..28.04 rows=8 width=90) (actual time=0.885..0.906 rows=8 loops=1)
-         Group Key: t.id
+        Group Key: t.id
          ->  Sort  (cost=27.87..27.90 rows=12 width=86) (actual time=0.868..0.876 rows=30 loops=1)
                Sort Key: t.id
                Sort Method: quicksort  Memory: 27kB
@@ -245,7 +245,7 @@ SET enable_seqscan to off;
  Execution time: 1.139 ms
 (19 rows)
 
-Cost увеличился, время исполнения увеличелось. 
+Cost увеличился, время исполнения увеличилось. 
 
 3)Данная выборка подсчитывает сколько заработала каждая команда, заняв при этом от первого до третьего места.
 
