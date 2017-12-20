@@ -160,8 +160,7 @@ CREATE TABLE player (
     career_start date NOT NULL,
     team_id integer NOT NULL,
     CONSTRAINT career_start CHECK ((career_start > '2000-01-01'::date)),
-    CONSTRAINT date_of_birth CHECK ((date_of_birth > '1920-01-01'::date)),
-    CONSTRAINT date_of_birth_more CHECK ((date_of_birth > '1920-01-01'::date))
+    CONSTRAINT date_of_birth CHECK ((date_of_birth > '1920-01-01'::date))
 );
 
 
@@ -203,9 +202,7 @@ ALTER TABLE team OWNER TO postgres;
 CREATE TABLE team_mediaprovider (
     tid integer NOT NULL,
     mpid integer NOT NULL,
-    link character varying(70) NOT NULL,
-    CONSTRAINT mpid_check CHECK ((mpid > 0)),
-    CONSTRAINT tid_check CHECK ((tid > 0))
+    link character varying(70) NOT NULL
 );
 
 
@@ -220,8 +217,6 @@ CREATE TABLE teamchampionship (
     cid integer NOT NULL,
     place_of_team integer NOT NULL,
     kush_of_team integer NOT NULL,
-    CONSTRAINT champion_tid_check CHECK ((tid > 0)),
-    CONSTRAINT cid_check CHECK ((cid > 0)),
     CONSTRAINT kush_of_team_check CHECK ((kush_of_team > '-1'::integer))
 );
 
