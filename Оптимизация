@@ -1,0 +1,309 @@
+Постая выборка: 
+
+1)Данная выборка демонстрирует команды, которые были созданы до 2010-01-01 в порядке возрастания года создания:
+
+SELECT *FROM team WHERE founded < '2010-01-01' order by founded ASC;
+
+Оптимизация:  CREATE INDEX ON team (founded);
+
+SET enable_seqscan to on;
+                                             QUERY PLAN
+-----------------------------------------------------------------------------------------------------
+ Sort  (cost=1.12..1.13 rows=3 width=90) (actual time=0.297..0.299 rows=5 loops=1)
+   Sort Key: founded
+   Sort Method: quicksort  Memory: 25kB
+   ->  Seq Scan on team  (cost=0.00..1.10 rows=3 width=90) (actual time=0.129..0.132 rows=5 loops=1)
+         Filter: (founded < '2010-01-01'::date)
+         Rows Removed by Filter: 3
+ Planning time: 0.610 ms
+ Execution time: 0.415 ms
+(8 rows)
+
+CREATE INDEX ON team (founded);
+SET enable_seqscan to off;
+
+                                                       QUERY PLAN
+------------------------------------------------------------------------------------------------------------------------
+ Index Scan using team_founded_idx on team  (cost=0.13..8.19 rows=3 width=90) (actual time=0.198..0.202 rows=5 loops=1)
+   Index Cond: (founded < '2010-01-01'::date)
+ Planning time: 3.370 ms
+ Execution time: 0.354 ms
+(4 rows)
+Cost уменьшился, время исполнения тоже.
+
+2)Данная выборка вывод количество игроков для каждой команды, которые роделись до 1995-1-1, сортировка по id в порядке возрастания. 
+
+SELECT team_id, count(id) AS Number_of_players_from_the_team FROM player WHERE date_of_birth<'1995-1-1' GROUP BY team_id ORDER BY team_id ASC;
+
+Оптимизация: CREATE INDEX ON player (date_of_birth);
+
+SET enable_seqscan to on;
+
+                                                  QUERY PLAN
+--------------------------------------------------------------------------------------------------------------
+ GroupAggregate  (cost=1.74..1.97 rows=13 width=12) (actual time=0.166..0.181 rows=8 loops=1)
+   Group Key: team_id
+   ->  Sort  (cost=1.74..1.77 rows=13 width=8) (actual time=0.153..0.156 rows=24 loops=1)
+         Sort Key: team_id
+         Sort Method: quicksort  Memory: 26kB
+         ->  Seq Scan on player  (cost=0.00..1.50 rows=13 width=8) (actual time=0.076..0.093 rows=24 loops=1)
+               Filter: (date_of_birth < '1995-01-01'::date)
+               Rows Removed by Filter: 16
+ Planning time: 0.698 ms
+ Execution time: 0.418 ms
+(10 rows)
+
+CREATE INDEX ON player (date_of_birth);
+SET enable_seqscan to off;
+
+                                                                  QUERY PLAN
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ GroupAggregate  (cost=8.61..8.84 rows=13 width=12) (actual time=0.178..0.193 rows=8 loops=1)
+   Group Key: team_id
+   ->  Sort  (cost=8.61..8.64 rows=13 width=8) (actual time=0.165..0.172 rows=24 loops=1)
+         Sort Key: team_id
+         Sort Method: quicksort  Memory: 26kB
+         ->  Index Scan using player_date_of_birth_idx on player  (cost=0.14..8.37 rows=13 width=8) (actual time=0.108..0.129 rows=24 loops=1)
+               Index Cond: (date_of_birth < '1995-01-01'::date)
+ Planning time: 3.627 ms
+ Execution time: 0.327 ms
+(9 rows)
+
+Cost увеличился, время исполнения уменьшилось. 
+
+3)Данная выборка демонстрирует количество чемпионатов, где призовой фонд был более 100000.
+
+SELECT COUNT(id) AS Number_of_championships FROM championship WHERE prize_fund > 100000;
+
+Оптимизация: CREATE INDEX ON championship (przie_fund);
+
+SET enable_seqscan to on;
+                                                 QUERY PLAN
+------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=1.13..1.14 rows=1 width=8) (actual time=0.083..0.083 rows=1 loops=1)
+   ->  Seq Scan on championship  (cost=0.00..1.13 rows=3 width=4) (actual time=0.064..0.071 rows=7 loops=1)
+         Filter: (prize_fund > 100000)
+         Rows Removed by Filter: 3
+ Planning time: 0.319 ms
+ Execution time: 0.501 ms
+(6 rows)
+
+CREATE INDEX ON championship (prie_fund);
+SET enable_seqscan to off;
+
+                                                                   QUERY PLAN
+------------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=8.20..8.21 rows=1 width=8) (actual time=0.119..0.119 rows=1 loops=1)
+   ->  Index Scan using championship_prize_fund_idx on championship  (cost=0.14..8.19 rows=3 width=4) (actual time=0.100..0.105 rows=7 loops=1)
+         Index Cond: (prize_fund > 100000)
+ Planning time: 3.637 ms
+ Execution time: 0.258 ms
+(5 rows)
+
+Cost увеличился, время исполнения уменьшилось. 
+
+4)Данная выборка демонстрирует чемпионаты, призовые фонды не повторяются, а сортируются относительно даты, если есть два похожих призовых фонда по количеству денег, то они сравниваются: выбирается тот, который закончился позже, призовой фонд не может быть меньше 100000.
+
+SELECT DISTINCT ON (prize_fund) name, end_date FROM championship where prize_fund > 100000 ORDER BY prize_fund,end_date ASC;
+
+Оптимизация: CREATE INDEX ON championship (prize_fund);
+
+SET enable_seqscan to on;
+
+                                                     QUERY PLAN
+--------------------------------------------------------------------------------------------------------------------
+ Unique  (cost=1.15..1.16 rows=3 width=126) (actual time=0.266..0.274 rows=5 loops=1)
+   ->  Sort  (cost=1.15..1.16 rows=3 width=126) (actual time=0.262..0.266 rows=7 loops=1)
+         Sort Key: prize_fund, end_date
+         Sort Method: quicksort  Memory: 25kB
+         ->  Seq Scan on championship  (cost=0.00..1.13 rows=3 width=126) (actual time=0.163..0.172 rows=7 loops=1)
+               Filter: (prize_fund > 100000)
+               Rows Removed by Filter: 3
+ Planning time: 0.796 ms
+ Execution time: 0.480 ms
+(9 rows)
+
+CREATE INDEX ON championship (prize_fund);
+SET enable_seqscan to off;
+
+                                                                       QUERY PLAN
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+ Unique  (cost=8.21..8.23 rows=3 width=126) (actual time=0.144..0.152 rows=5 loops=1)
+   ->  Sort  (cost=8.21..8.22 rows=3 width=126) (actual time=0.141..0.142 rows=7 loops=1)
+         Sort Key: prize_fund, end_date
+         Sort Method: quicksort  Memory: 25kB
+         ->  Index Scan using championship_prize_fund_idx1 on championship  (cost=0.14..8.19 rows=3 width=126) (actual time=0.088..0.096 rows=7 loops=1)
+               Index Cond: (prize_fund > 100000)
+ Planning time: 2.002 ms
+ Execution time: 0.264 ms
+ 
+ Cost увеличился, время исполнения уменьшилось. 
+
+Средняя выборка: 
+
+1)Данная выборка демонстрирует процесс вывода тех команд, которые играли в родных странах на различных чемпионатах, которые закончились позже 2016-01-01, сортируется по занятому месту на чемпионате в порядке возрастания (начиная с первого).
+
+
+SELECT t.name, t.country, tc.place_of_team, tc.kush_of_team, c.name, c.end_date, c.host_country, c.prize_fund FROM team t 
+
+JOIN teamchampionship 
+
+tc ON t.id = tc.tid 
+
+JOIN championship c 
+
+ON t.country = c.host_country 
+
+AND tc.cid = c.id 
+
+WHERE c.end_date > '2016-01-01'  
+
+ORDER BY tc.place_of_team ASC; 
+
+Оптимизация:  CREATE INDEX team_country_index ON team (country);
+
+              CREATE INDEX championship_host_country_index ON championship (host_country);
+
+              CREATE INDEX championship_end_date_index ON championship (end_date);
+
+              
+
+2)Данная выборка подсчитывает количество СМИ, которые есть у команды (т.е для каждой команды своё количество СМИ), причём СМИ должны быть созданы позднее 2000-1-1.
+
+
+
+SELECT t.name, count(tm.tid) AS Number_of_media 
+
+FROM mediaprovider m 
+
+JOIN team_mediaprovider tm 
+
+ON m.id=tm.mpid 
+
+JOIN team t 
+
+ON tm.tid = t.id 
+
+WHERE m.date_of_create>'2000-1-1'
+
+GROUP BY t.id 
+
+ORDER BY count(tm.tid) DESC;
+
+
+
+Оптимизация: CREATE INDEX ON mediaprovider (date_of_create);
+
+SET enable_seqscan to on;
+
+                                                               QUERY PLAN
+-----------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=4.04..4.05 rows=8 width=90) (actual time=0.368..0.370 rows=8 loops=1)
+   Sort Key: (count(tm.tid)) DESC
+   Sort Method: quicksort  Memory: 25kB
+   ->  HashAggregate  (cost=3.84..3.92 rows=8 width=90) (actual time=0.318..0.322 rows=8 loops=1)
+         Group Key: t.id
+         ->  Hash Join  (cost=2.27..3.78 rows=12 width=86) (actual time=0.230..0.276 rows=30 loops=1)
+               Hash Cond: (tm.tid = t.id)
+               ->  Hash Join  (cost=1.09..2.52 rows=12 width=4) (actual time=0.094..0.121 rows=30 loops=1)
+                     Hash Cond: (tm.mpid = m.id)
+                     ->  Seq Scan on team_mediaprovider tm  (cost=0.00..1.30 rows=30 width=8) (actual time=0.027..0.032 rows=30 loops=1)
+                     ->  Hash  (cost=1.06..1.06 rows=2 width=4) (actual time=0.048..0.048 rows=5 loops=1)
+                           Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                           ->  Seq Scan on mediaprovider m  (cost=0.00..1.06 rows=2 width=4) (actual time=0.032..0.035 rows=5 loops=1)
+                                 Filter: (date_of_create > '2000-01-01'::date)
+               ->  Hash  (cost=1.08..1.08 rows=8 width=82) (actual time=0.119..0.119 rows=8 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                     ->  Seq Scan on team t  (cost=0.00..1.08 rows=8 width=82) (actual time=0.088..0.095 rows=8 loops=1)
+ Planning time: 2.199 ms
+ Execution time: 0.653 ms
+(19 rows)
+
+CREATE INDEX ON mediaprovider (date_of_create);
+SET enable_seqscan to off;
+
+                                                                                    QUERY PLAN
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=28.16..28.18 rows=8 width=90) (actual time=0.932..0.936 rows=8 loops=1)
+   Sort Key: (count(tm.tid)) DESC
+   Sort Method: quicksort  Memory: 25kB
+   ->  GroupAggregate  (cost=27.87..28.04 rows=8 width=90) (actual time=0.885..0.906 rows=8 loops=1)
+         Group Key: t.id
+         ->  Sort  (cost=27.87..27.90 rows=12 width=86) (actual time=0.868..0.876 rows=30 loops=1)
+               Sort Key: t.id
+               Sort Method: quicksort  Memory: 27kB
+               ->  Nested Loop  (cost=0.40..27.65 rows=12 width=86) (actual time=0.215..0.810 rows=30 loops=1)
+                     ->  Nested Loop  (cost=0.27..20.93 rows=12 width=4) (actual time=0.205..0.651 rows=30 loops=1)
+                           ->  Index Scan using mediaprovider_date_of_create_idx on mediaprovider m  (cost=0.13..8.17 rows=2 width=4) (actual time=0.178..0.182 rows=5 loops=1)
+                                 Index Cond: (date_of_create > '2000-01-01'::date)
+                           ->  Index Only Scan using team_mediaprovider_pkey on team_mediaprovider tm  (cost=0.14..6.37 rows=1 width=8) (actual time=0.023..0.028 rows=6 loops=5)
+                                 Index Cond: (mpid = m.id)
+                                 Heap Fetches: 30
+                     ->  Index Scan using team_pkey on team t  (cost=0.13..0.55 rows=1 width=82) (actual time=0.003..0.004 rows=1 loops=30)
+                           Index Cond: (id = tm.tid)
+ Planning time: 1.562 ms
+ Execution time: 1.139 ms
+(19 rows)
+
+Cost увеличился, время исполнения увеличелось. 
+
+3)Данная выборка подсчитывает сколько заработала каждая команда, заняв при этом от первого до третьего места.
+
+SELECT t.name, SUM(tc.kush_of_team) 
+
+FROM team t 
+
+JOIN teamchampionship tc 
+
+ON t.id=tc.tid 
+
+WHERE tc.place_of_team<4  
+
+GROUP BY t.id 
+
+ORDER BY sum(tc.kush_of_team) ASC;
+
+Оптимизация: CREATE INDEX ON teamchampionship (place_of_team);
+
+SET enable_seqscan to on;
+
+                                                                           QUERY PLAN
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=25.68..25.70 rows=8 width=90) (actual time=0.243..0.245 rows=7 loops=1)
+   Sort Key: (sum(tc.kush_of_team))
+   Sort Method: quicksort  Memory: 25kB
+   ->  GroupAggregate  (cost=0.27..25.56 rows=8 width=90) (actual time=0.108..0.162 rows=7 loops=1)
+         Group Key: t.id
+         ->  Merge Join  (cost=0.27..25.40 rows=17 width=86) (actual time=0.065..0.117 rows=18 loops=1)
+               Merge Cond: (t.id = tc.tid)
+               ->  Index Scan using team_pkey on team t  (cost=0.13..12.25 rows=8 width=82) (actual time=0.031..0.035 rows=8 loops=1)
+               ->  Index Scan using teamchampionship_pkey on teamchampionship tc  (cost=0.14..13.05 rows=17 width=8) (actual time=0.021..0.052 rows=18 loops=1)
+                     Filter: (place_of_team < 4)
+                     Rows Removed by Filter: 34
+ Planning time: 1.225 ms
+ Execution time: 0.455 ms
+(13 rows)
+
+CREATE INDEX ON teamchampionship (place_of_team);
+SET enable_seqscan to off;
+
+                                                                                    QUERY PLAN
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=21.46..21.48 rows=8 width=90) (actual time=0.264..0.267 rows=7 loops=1)
+   Sort Key: (sum(tc.kush_of_team))
+   Sort Method: quicksort  Memory: 25kB
+   ->  GroupAggregate  (cost=8.92..21.34 rows=8 width=90) (actual time=0.201..0.230 rows=7 loops=1)
+         Group Key: t.id
+         ->  Merge Join  (cost=8.92..21.17 rows=17 width=86) (actual time=0.181..0.205 rows=18 loops=1)
+               Merge Cond: (t.id = tc.tid)
+               ->  Index Scan using team_pkey on team t  (cost=0.13..12.25 rows=8 width=82) (actual time=0.018..0.024 rows=8 loops=1)
+               ->  Sort  (cost=8.78..8.83 rows=17 width=8) (actual time=0.153..0.157 rows=18 loops=1)
+                     Sort Key: tc.tid
+                     Sort Method: quicksort  Memory: 25kB
+                     ->  Index Scan using teamchampionship_place_of_team_idx on teamchampionship tc  (cost=0.14..8.44 rows=17 width=8) (actual time=0.116..0.131 rows=18 loops=1)
+                           Index Cond: (place_of_team < 4)
+ Planning time: 9.986 ms
+ Execution time: 0.402 ms
+(15 rows)
+
+Cost увеличился, время исполнения уменьшилось. 
