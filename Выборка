@@ -15,12 +15,11 @@ SELECT COUNT(id) AS Number_of_championships FROM championship WHERE prize_fund >
 
 Оптимизация: CREATE INDEX ON championship (prize_fund);
 
-4)Данная выборка демонстрирует чемпионаты, призовые фонды не повторяются, а сортируются относительно даты, если есть два похожих призовых фонда по количеству денег, то они сравниваются: выбирается тот, который закончился позже, призовой фонд не может быть меньше 100000.
+4)Данная выборка демонстрирует чемпионаты, где призовые фонды не повторяются, а сортируются относительно даты, если есть два похожих призовых фонда по количеству денег, то они сравниваются: выбирается тот, который закончился позже, призовой фонд не может быть меньше 100000.
 SELECT DISTINCT ON (prize_fund) name, end_date FROM championship where prize_fund > 100000 ORDER BY prize_fund,end_date ASC;
 
 Оптимизация: CREATE INDEX ON championship (prize_fund);
 
- 
 Средняя выборка: 
 
 1)Данная выборка демонстрирует процесс вывода тех команд, которые играли в родных странах на различных чемпионатах, которые закончились позже 2016-01-01, сортируется по занятому месту на чемпионате в порядке возрастания (начиная с первого).
@@ -96,27 +95,25 @@ JOIN championship c ON tc.cid = c.id
 WHERE tc.kush_of_team > (SELECT MIN(prize_fund) FROM championship 
 ORDER BY t.name, tc.kush_of_team DESC); 
 
-3)Найти разницу между максимальным суммарным количеством денег, которая команда "А" выиграла, и минимальным суммарным количеством денег, которая выиграла команда "Б", где А и Б две разных команды. 
-select 
-(select 
-max(sum) 
-from 
-(select 
-t.name, sum(tc.kush_of_team) 
-from team t 
-JOIN teamchampionship tc 
-ON t.id = tc.tid 
-GROUP BY t.id) 
-AS MAX)
+3)Найти максимальное и минимальное количество, которое денег, которые заработали команды, а также их разницу между максимальным суммарным количеством денег, которая команда "А" выиграла, и минимальным суммарным количеством денег, которая выиграла команда "Б", где А и Б две разных команды. 
+SELECT
+(SELECT max(sum) 
+FROM  
+(SELECT t.name, sum(tc.kush_of_team) 
+FROM team t JOIN teamchampionship tc ON t.id = tc.tid 
+GROUP BY t.id) AS MAX),
+(SELECT min(sum) 
+FROM 
+(SELECT t.name, sum(tc.kush_of_team) 
+FROM team t JOIN teamchampionship tc ON t.id = tc.tid 
+GROUP BY t.id) AS MIN), 
+(SELECT max(sum) FROM 
+(SELECT t.name, sum(tc.kush_of_team) 
+FROM team t JOIN teamchampionship tc ON t.id = tc.tid 
+GROUP BY t.id) AS MAX) 
 - 
-(select 
-min(sum) 
-from 
-(select 
-t.name, sum(tc.kush_of_team) 
-from team t 
-JOIN teamchampionship tc 
-ON t.id = tc.tid 
-GROUP BY t.id) 
-AS MIN) 
+(SELECT min(sum) 
+FROM (select t.name, sum(tc.kush_of_team) 
+FROM team t JOIN teamchampionship tc ON t.id = tc.tid 
+GROUP BY t.id) AS MIN) 
 AS dif_between_max_kush_of_team_and_min_kush_of_team;
