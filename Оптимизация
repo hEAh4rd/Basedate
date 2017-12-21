@@ -29,6 +29,7 @@ SET enable_seqscan to off;
  Planning time: 3.370 ms
  Execution time: 0.354 ms
 (4 rows)
+
 Cost уменьшился, время исполнения тоже.
 
 2)Данная выборка вывод количество игроков для каждой команды, которые роделись до 1995-1-1, сортировка по id в порядке возрастания. 
@@ -156,8 +157,7 @@ ON t.country = c.host_country
 
 AND tc.cid = c.id 
 
-WHERE c.end_date > '2016-01-01'  
-
+WHERE c.end_date > '2016-01-01' 
 ORDER BY tc.place_of_team ASC; 
 
 Оптимизация:  CREATE INDEX team_country_index ON team (country);
@@ -166,7 +166,54 @@ ORDER BY tc.place_of_team ASC;
 
               CREATE INDEX championship_end_date_index ON championship (end_date);
 
-              
+SET enable_seqscan to on;   
+
+                                                                       QUERY PLAN
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=28.14..28.14 rows=2 width=220) (actual time=0.178..0.180 rows=3 loops=1)
+   Sort Key: tc.place_of_team
+   Sort Method: quicksort  Memory: 25kB
+   ->  Nested Loop  (cost=0.41..28.13 rows=2 width=220) (actual time=0.075..0.149 rows=3 loops=1)
+         Join Filter: (c.id = tc.cid)
+         Rows Removed by Join Filter: 24
+         ->  Nested Loop  (cost=0.27..24.79 rows=2 width=220) (actual time=0.058..0.096 rows=4 loops=1)
+               ->  Index Scan using championship_pkey on championship c  (cost=0.14..12.31 rows=3 width=134) (actual time=0.034..0.044 rows=10 loops=1)
+                     Filter: (end_date > '2016-01-01'::date)
+               ->  Index Scan using team_country_idx on team t  (cost=0.13..4.15 rows=1 width=86) (actual time=0.003..0.004 rows=0 loops=10)
+                     Index Cond: (country = c.host_country)
+         ->  Index Scan using teamchampionship_pkey on teamchampionship tc  (cost=0.14..1.66 rows=1 width=16) (actual time=0.006..0.010 rows=7 loops=4)
+               Index Cond: (tid = t.id)
+ Planning time: 1.748 ms
+ Execution time: 0.349 ms
+(15 rows)
+
+CREATE INDEX team_country_index ON team (country);
+CREATE INDEX championship_host_country_index ON championship (host_country);
+СREATE INDEX championship_end_date_index ON championship (end_date);
+SET enable_seqscan to off;   
+
+                                                                              QUERY PLAN
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=24.16..24.16 rows=2 width=220) (actual time=0.380..0.381 rows=3 loops=1)
+   Sort Key: tc.place_of_team
+   Sort Method: quicksort  Memory: 25kB
+   ->  Nested Loop  (cost=0.41..24.15 rows=2 width=220) (actual time=0.214..0.317 rows=3 loops=1)
+         Join Filter: (c.id = tc.cid)
+         Rows Removed by Join Filter: 24
+         ->  Nested Loop  (cost=0.27..20.81 rows=2 width=220) (actual time=0.183..0.237 rows=4 loops=1)
+               Join Filter: (t.country = c.host_country)
+               Rows Removed by Join Filter: 76
+               ->  Index Scan using team_pkey on team t  (cost=0.13..12.25 rows=8 width=86) (actual time=0.082..0.088 rows=8 loops=1)
+               ->  Materialize  (cost=0.14..8.20 rows=3 width=134) (actual time=0.008..0.012 rows=10 loops=8)
+                     ->  Index Scan using championship_end_date_index on championship c  (cost=0.14..8.19 rows=3 width=134) (actual time=0.043..0.056 rows=10 loops=1)
+                           Index Cond: (end_date > '2016-01-01'::date)
+         ->  Index Scan using teamchampionship_pkey on teamchampionship tc  (cost=0.14..1.66 rows=1 width=16) (actual time=0.009..0.015 rows=7 loops=4)
+               Index Cond: (tid = t.id)
+ Planning time: 3.773 ms
+ Execution time: 0.718 ms
+(17 rows)
+
+Cost увеличился, время исполнения увеличилось.
 
 2)Данная выборка подсчитывает количество СМИ, которые есть у команды (т.е для каждой команды своё количество СМИ), причём СМИ должны быть созданы позднее 2000-1-1.
 
