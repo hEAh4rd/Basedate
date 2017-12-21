@@ -5,7 +5,7 @@ SELECT *FROM team WHERE founded < '2010-01-01' order by founded ASC;
 
 Оптимизация:  CREATE INDEX ON team (founded);
 
-2)Данная выборка вывод количество игроков для каждой команды, которые роделись до 1995-1-1, сортировка по id в порядке возрастания. 
+2)Данная выборка вывод количество игроков для каждой команды, которые родились до 1995-1-1, сортировка по id в порядке возрастания. 
 SELECT team_id, count(id) AS Number_of_players_from_the_team FROM player WHERE date_of_birth<'1995-1-1' GROUP BY team_id ORDER BY team_id ASC;
 
 Оптимизация: CREATE INDEX ON player (date_of_birth);
