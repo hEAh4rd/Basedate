@@ -1,0 +1,44 @@
+1) Выводит игроков старше 25 лет, выигравших наибольшее количество чемпионатов, если таких игороков несколько, то выводятся они все.
+
+SELECT p.surname AS player, p.date_of_birth, count(*) AS amount_of_won_championships FROM 
+player p JOIN team t ON p.team_id = t.id AND p.date_of_birth <= '1993-12-25'
+JOIN teamchampionship tc ON tc.tid = t.id WHERE tc.place_of_team = 1 
+GROUP BY p.id
+HAVING count(*) = (SELECT MAX(amount_of_won_championships) FROM 
+(SELECT p.surname AS player, p.date_of_birth, count(*) AS amount_of_won_championships FROM 
+player p JOIN team t ON p.team_id = t.id AND p.date_of_birth <= '1993-12-25'
+JOIN teamchampionship tc ON tc.tid = t.id WHERE tc.place_of_team = 1 
+GROUP BY p.id) AS foo)
+ORDER BY amount_of_won_championships DESC;
+
+2) Выводит название команды по параметру _nuber_, её средний заработок на турнирах, среднее место на турнирах(эффективность) и отношение заработка к эффективности, то есть монетизацию.
+(Параметр _number_ изменяется от 1 до 8 включительно.
+
+SELECT t.name AS team, round( 
+(SELECT sum(tcs.kush_of_team) FROM teamchampionship tcs WHERE tcs.tid =_number_) /
+(SELECT count(*) FROM teamchampionship tcs WHERE tcs.tid=_number_))
+AS medium_earning, round( 
+(SELECT sum(tcs.place_of_team) FROM teamchampionship tcs WHERE tcs.tid =_number_) /
+(SELECT count(*) FROM teamchampionship tcs WHERE tcs.tid=_number_))
+AS effectiveness, round(round(
+(SELECT sum(tcs.kush_of_team) FROM teamchampionship tcs WHERE tcs.tid =_number_) /
+(SELECT count(*) FROM teamchampionship tcs WHERE tcs.tid=_number_)) / 
+round ((SELECT sum(tcs.place_of_team) FROM teamchampionship tcs WHERE tcs.tid =_number_) /
+(SELECT count(*) FROM teamchampionship tcs WHERE tcs.tid=_number_))) 
+AS monetization
+FROM team t JOIN teamchampionship tcs ON t.id = tcs.tid WHERE tcs.tid =_number_ GROUP BY t.id;
+
+Например,
+SELECT t.name AS team, round( 
+(SELECT sum(tcs.kush_of_team) FROM teamchampionship tcs WHERE tcs.tid = 1) /
+(SELECT count(*) FROM teamchampionship tcs WHERE tcs.tid=1))
+AS medium_earning, round( 
+(SELECT sum(tcs.place_of_team) FROM teamchampionship tcs WHERE tcs.tid =1) /
+(SELECT count(*) FROM teamchampionship tcs WHERE tcs.tid=1))
+AS effectiveness, round(round(
+(SELECT sum(tcs.kush_of_team) FROM teamchampionship tcs WHERE tcs.tid =1) /
+(SELECT count(*) FROM teamchampionship tcs WHERE tcs.tid=1)) / 
+round ((SELECT sum(tcs.place_of_team) FROM teamchampionship tcs WHERE tcs.tid =1) /
+(SELECT count(*) FROM teamchampionship tcs WHERE tcs.tid=1))) 
+AS monetization
+FROM team t JOIN teamchampionship tcs ON t.id = tcs.tid WHERE tcs.tid =1 GROUP BY t.id;
